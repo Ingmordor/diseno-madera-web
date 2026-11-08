@@ -38,8 +38,15 @@ Basada y calibrada directamente sobre las fórmulas, tablas y modelos de cálcul
     *   Diagramas de distribución de esfuerzos normales ($\sigma$) y cortantes ($\tau$).
     *   Diagramas de solicitaciones de viga ($M(x), V(x)$).
 
-*   **📋 Memoria de Cálculo Formal:**
-    *   Generación de reporte técnico estructurado para radicación en Curaduría Urbana o Interventoría, listo para imprimir o exportar a PDF.
+*   **📋 Memorias de Cálculo & Salida Multi-Elemento (NSR-10 Título G):**
+    *   Generación de reportes técnicos idénticos al formato oficial **`TRL3-DENDROCALAMUS COLUMNAS.pdf`**.
+    *   **Salida Multi-Elemento (Páginas 41 a 59 del PDF):** Tabla consolidada para grupos de columnas y vigas con ratios de demanda/capacidad ($M_a/M_n$, $V_a/V_n$, $P_a/P_n$, $\lambda$, $C_p$, $C_L$, Euler $F_{cE}$ y ratio biaxial $RBI \le 1.0$) y veredicto normativo (CUMPLE / SOBREESFUERZO).
+    *   **Ficha Detallada Paso a Paso:** Memorias analíticas individuales con desglose de factores ($C_D, C_m, C_t, C_{in}, C_r, C_{kd}, C_F, C_T$).
+    *   **Catálogo de Imágenes y Esquemas Normativos Embebidos (`assets/images/`):**
+        *   `normativa/`: Casos de longitud efectiva $K_e$, columnas adelgazadas, arriostramiento lateral de vigas y tablas NSR-10.
+        *   `formulas/`: Ecuaciones oficiales de estabilidad $C_p$, Euler, Hankinson para compresión oblicua e interacción biaxial G.5.2.
+        *   `proyecto/`: Modelos tridimensionales de pórticos estructurales en bambú del proyecto TRL-3.
+    *   Impresión y exportación PDF optimizada con estilos `@media print` de paginación limpia.
 
 ---
 

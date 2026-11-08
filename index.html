@@ -461,7 +461,12 @@
 
           <!-- Gráfico Curva de Capacidad Padm(L) -->
           <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-2 shadow-sm">
-            <h3 class="text-sm font-semibold">📈 Curva de Capacidad Admisible Padm(L) con Punto de Diseño</h3>
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-semibold">📈 Curva de Capacidad Admisible Padm(L) con Punto de Diseño</h3>
+              <button onclick="agregarElementoActual()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 transition-colors">
+                <span>➕</span> Añadir Columna al Reporte
+              </button>
+            </div>
             <div class="bg-[var(--background)] rounded-xl border border-[var(--border)] p-2 flex items-center justify-center min-h-[240px]">
               <svg id="svg-col-viewer" width="100%" height="240" viewBox="0 0 480 240" class="overflow-visible select-none"></svg>
             </div>
@@ -532,17 +537,52 @@
     <!-- ============================================== -->
     <div id="tab-catalogo" class="tab-content space-y-5">
       <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-4 shadow-sm">
-        <div class="flex items-center justify-between flex-wrap gap-3">
+        
+        <!-- BARRA DE HERRAMIENTAS Y CONTROLES DEL REPORTE -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[var(--border)]">
           <div>
-            <h2 class="text-base font-bold text-[var(--foreground)]">📋 Memoria de Verificación Estructural</h2>
-            <p class="text-xs text-[var(--muted-foreground)]">Formato técnico listo para Radicación en Curaduría Urbana o Interventoría</p>
+            <h2 class="text-base font-bold text-[var(--foreground)] flex items-center gap-2">
+              <span>📋</span> Memoria de Verificación Estructural (NSR-10)
+            </h2>
+            <p class="text-xs text-[var(--muted-foreground)]">Salida técnica equivalente al informe oficial TRL3-DENDROCALAMUS COLUMNAS.pdf</p>
           </div>
-          <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm">
-            🖨️ Imprimir / Guardar en PDF
-          </button>
+
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="agregarElementoActual()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm" title="Agregar elemento activo a la lista de cálculo">
+              <span>➕</span> Agregar Elemento
+            </button>
+            <button onclick="restaurarElementosTRL3()" class="bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--border)] text-xs px-3 py-1.5 rounded-lg transition-colors" title="Cargar los elementos originales del PDF TRL-3">
+              <span>🔄</span> Cargar TRL-3
+            </button>
+            <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm">
+              <span>🖨️</span> Imprimir / PDF
+            </button>
+          </div>
         </div>
 
-        <div id="report-container" class="bg-white text-gray-900 p-6 rounded-xl border border-gray-300 font-sans shadow-sm">
+        <!-- SELECTORES DE VISTA Y OPCIONES -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--background)] p-3 rounded-lg border border-[var(--border)] text-xs">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-[var(--muted-foreground)] font-medium mr-1">Vista del Reporte:</span>
+            <button id="btn-rep-completo" onclick="setReportMode('completo')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-medium text-xs shadow-sm">
+              📑 Memoria Completa
+            </button>
+            <button id="btn-rep-multielemento" onclick="setReportMode('multielemento')" class="px-3 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--muted-foreground)] text-xs hover:text-[var(--foreground)]">
+              📊 Tabla Multi-Elemento (Págs 41-59)
+            </button>
+            <button id="btn-rep-individual" onclick="setReportMode('individual')" class="px-3 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--muted-foreground)] text-xs hover:text-[var(--foreground)]">
+              🔍 Ficha Detallada
+            </button>
+          </div>
+
+          <label class="flex items-center gap-2 cursor-pointer select-none font-medium text-[var(--foreground)]">
+            <input type="checkbox" id="chk-rep-images" checked onchange="toggleReportImages(this)" class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500">
+            <span>🖼️ Incluir Fórmulas, Normas y Fotos 3D</span>
+          </label>
+        </div>
+
+        <!-- CONTENEDOR DEL REPORTE IMPRIMIBLE -->
+        <div id="report-container" class="bg-white text-gray-900 p-6 md:p-8 rounded-xl border border-gray-300 font-sans shadow-sm overflow-x-auto">
           <!-- Renderizado dinámico por reportGenerator.js -->
         </div>
       </div>

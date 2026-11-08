@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="es" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DENDRO-STRUCT | Diseño Estructural en Bambú & Madera (NSR-10)</title>
+  <meta name="description" content="Aplicación web interactiva para el diseño y verificación de secciones estructurales en madera y bambú (Dendrocalamus asper) bajo el Reglamento Colombiano de Construcción Sismo Resistente NSR-10 Título G.">
+  <!-- Tailwind CSS CDN para renderizado instantáneo en Cloudflare Pages -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --background: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --foreground: #0f172a;
+      --muted-foreground: #64748b;
+    }
+    .dark {
+      --background: #090d16;
+      --card: #111827;
+      --border: #1f2937;
+      --foreground: #f8fafc;
+      --muted-foreground: #94a3b8;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    input[type=range] { accent-color: #059669; }
+    @media print {
+      body * { visibility: hidden; }
+      #report-container, #report-container * { visibility: visible; }
+      #report-container { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen p-3 md:p-6 transition-colors duration-200">
+
+  <div class="max-w-7xl mx-auto space-y-4 md:space-y-6">
+
+    <!-- CABECERA PRINCIPAL -->
+    <header class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 md:p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-2xl font-bold border border-emerald-500/20 shadow-inner">
+          🎋
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-xl md:text-2xl font-bold tracking-tight">DENDRO-STRUCT</h1>
+            <span class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs px-2.5 py-0.5 rounded-full font-semibold">NSR-10 Título G</span>
+            <span class="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-xs px-2.5 py-0.5 rounded-full font-semibold">TRL-3</span>
+          </div>
+          <p class="text-xs md:text-sm text-[var(--muted-foreground)]">Diseño y verificación estructural de secciones en Bambú (<em>Dendrocalamus asper</em>) y Maderas</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 text-xs flex-wrap">
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--muted-foreground)] font-mono">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>Tiempo Real</span>
+        </div>
+        <button id="theme-toggle" class="p-2 rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors" title="Cambiar tema día/noche">
+          🌙
+        </button>
+        <a href="https://github.com/Ingmordor/diseno-madera-web" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-[var(--foreground)] text-[var(--background)] font-medium flex items-center gap-1.5 hover:opacity-90 transition-opacity">
+          <span>GitHub</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- NAVEGACIÓN MODULAR DE PESTAÑAS -->
+    <nav class="flex border-b border-[var(--border)] gap-1 md:gap-2 overflow-x-auto pb-1 text-sm font-medium">
+      <button onclick="switchTab('vigas')" id="tab-btn-vigas" class="tab-btn active px-4 py-2.5 rounded-t-xl border-b-2 border-emerald-600 text-emerald-600 dark:text-emerald-400 font-semibold bg-[var(--card)] flex items-center gap-2 transition-all">
+        <span>📐</span> Vigas (Flexión & Cortante)
+      </button>
+      <button onclick="switchTab('columnas')" id="tab-btn-columnas" class="tab-btn px-4 py-2.5 rounded-t-xl border-b-2 border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)] flex items-center gap-2 transition-all">
+        <span>🏛️</span> Columnas (Axial P / T)
+      </button>
+      <button onclick="switchTab('flexocomp')" id="tab-btn-flexocomp" class="tab-btn px-4 py-2.5 rounded-t-xl border-b-2 border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)] flex items-center gap-2 transition-all">
+        <span>🔄</span> Flexo-Compresión Biaxial (G.5)
+      </button>
+      <button onclick="switchTab('catalogo')" id="tab-btn-catalogo" class="tab-btn px-4 py-2.5 rounded-t-xl border-b-2 border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)] flex items-center gap-2 transition-all">
+        <span>📋</span> Catálogo & Memoria
+      </button>
+    </nav>
+
+    <!-- ============================================== -->
+    <!-- PESTAÑA 1: VIGAS (FLEXIÓN, CORTANTE Y FLECHA)  -->
+    <!-- ============================================== -->
+    <div id="tab-vigas" class="tab-content active space-y-5">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <!-- PANEL IZQUIERDO: CONTROLES Y ENTRADAS (5 cols) -->
+        <div class="lg:col-span-5 space-y-4">
+          
+          <!-- SECCIÓN: MATERIAL ESTRUCTURAL -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3 shadow-sm">
+            <h2 class="text-sm font-semibold flex items-center justify-between">
+              <span>🌱 1. Material Estructural</span>
+              <span id="badge-especie" class="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded font-mono font-medium">ES7: Dendrocalamus</span>
+            </h2>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <label class="text-[var(--muted-foreground)] block mb-1">Especie / Grupo:</label>
+                <select id="sel-material" class="w-full bg-[var(--background)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+                  <option value="ES7" selected>Dendrocalamus asper (ES7)</option>
+                  <option value="ES1">NSR-10 Grupo A (ES1)</option>
+                  <option value="ES2">Madera Laminada (ES2)</option>
+                  <option value="ES3">NSR-10 Grupo B (ES3)</option>
+                  <option value="ES4">NSR-10 Grupo C (ES4)</option>
+                  <option value="ES6">Madera Maciza T.E. (ES6)</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-[var(--muted-foreground)] block mb-1">Tipo de Sección:</label>
+                <select id="sel-seccion-tipo" class="w-full bg-[var(--background)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+                  <option value="tubo" selected>Culmo Tubular Bambú</option>
+                  <option value="haz2">Haz Compuesto (2 Culmos)</option>
+                  <option value="rect">Rectangular Aserrada</option>
+                  <option value="rolliza">Rolliza Maciza</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Chips de Valores Admisibles Base -->
+            <div class="grid grid-cols-4 gap-1.5 text-center pt-1 border-t border-[var(--border)] text-[11px]">
+              <div class="p-1 rounded bg-[var(--background)]">
+                <span class="text-[var(--muted-foreground)] block text-[10px]">Fb</span>
+                <span id="mat-fb" class="font-bold text-emerald-600">85.2 MPa</span>
+              </div>
+              <div class="p-1 rounded bg-[var(--background)]">
+                <span class="text-[var(--muted-foreground)] block text-[10px]">Fc</span>
+                <span id="mat-fc" class="font-bold">34.1 MPa</span>
+              </div>
+              <div class="p-1 rounded bg-[var(--background)]">
+                <span class="text-[var(--muted-foreground)] block text-[10px]">Fv</span>
+                <span id="mat-fv" class="font-bold">8.3 MPa</span>
+              </div>
+              <div class="p-1 rounded bg-[var(--background)]">
+                <span class="text-[var(--muted-foreground)] block text-[10px]">E0.5</span>
+                <span id="mat-e" class="font-bold">19,220 MPa</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: GEOMETRÍA -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3 shadow-sm">
+            <h2 class="text-sm font-semibold flex items-center justify-between">
+              <span>📐 2. Geometría de Sección</span>
+              <span id="geom-summary" class="text-xs text-[var(--muted-foreground)] font-mono">D=140mm, t=14mm</span>
+            </h2>
+
+            <!-- Controles para Culmo Tubular -->
+            <div id="controles-tubular" class="space-y-3">
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-[var(--muted-foreground)]">Diámetro Exterior (D):</span>
+                  <span id="val-diam" class="font-mono font-bold text-emerald-600">140 mm</span>
+                </div>
+                <input id="slider-diam" type="range" min="80" max="220" value="140" step="5" class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg cursor-pointer">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-[var(--muted-foreground)]">Espesor de Pared (t):</span>
+                  <span id="val-t" class="font-mono font-bold text-emerald-600">14 mm</span>
+                </div>
+                <input id="slider-t" type="range" min="6" max="30" value="14" step="1" class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg cursor-pointer">
+              </div>
+            </div>
+
+            <!-- Controles para Rectangular -->
+            <div id="controles-rectangular" class="space-y-3 hidden">
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-[var(--muted-foreground)]">Base (b):</span>
+                  <span id="val-b" class="font-mono font-bold text-emerald-600">100 mm</span>
+                </div>
+                <input id="slider-b" type="range" min="40" max="250" value="100" step="10" class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg cursor-pointer">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-[var(--muted-foreground)]">Peralte / Altura (d):</span>
+                  <span id="val-d" class="font-mono font-bold text-emerald-600">200 mm</span>
+                </div>
+                <input id="slider-d" type="range" min="80" max="500" value="200" step="10" class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg cursor-pointer">
+              </div>
+            </div>
+
+            <!-- Propiedades calculadas -->
+            <div class="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--border)] text-xs font-mono">
+              <div class="bg-[var(--background)] p-2 rounded">
+                <span class="text-[var(--muted-foreground)] text-[10px] block font-sans">Área Neta</span>
+                <span id="prop-area" class="font-bold">55.4 cm²</span>
+              </div>
+              <div class="bg-[var(--background)] p-2 rounded">
+                <span class="text-[var(--muted-foreground)] text-[10px] block font-sans">Inercia (Ix)</span>
+                <span id="prop-inercia" class="font-bold">1,180 cm⁴</span>
+              </div>
+              <div class="bg-[var(--background)] p-2 rounded">
+                <span class="text-[var(--muted-foreground)] text-[10px] block font-sans">Módulo (Sx)</span>
+                <span id="prop-mod" class="font-bold">168.6 cm³</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: LUZ Y CARGAS -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3 shadow-sm">
+            <h2 class="text-sm font-semibold flex items-center justify-between">
+              <span>⚖️ 3. Longitud y Cargas</span>
+              <span class="text-xs text-[var(--muted-foreground)]">Simplemente Apoyada</span>
+            </h2>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs text-[var(--muted-foreground)] block mb-1">Luz Libre (L):</label>
+                <div class="flex items-center">
+                  <input id="inp-luz" type="number" step="0.1" value="3.5" min="0.5" max="12" class="w-full bg-[var(--background)] border border-[var(--border)] rounded-l-lg px-2.5 py-1.5 text-xs font-mono outline-none">
+                  <span class="bg-[var(--border)] px-2 py-1.5 text-xs rounded-r-lg text-[var(--muted-foreground)]">m</span>
+                </div>
+              </div>
+              <div>
+                <label class="text-xs text-[var(--muted-foreground)] block mb-1">Carga Unif. (w):</label>
+                <div class="flex items-center">
+                  <input id="inp-w" type="number" step="0.2" value="2.5" min="0" max="30" class="w-full bg-[var(--background)] border border-[var(--border)] rounded-l-lg px-2.5 py-1.5 text-xs font-mono outline-none">
+                  <span class="bg-[var(--border)] px-2 py-1.5 text-xs rounded-r-lg text-[var(--muted-foreground)]">kN/m</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-lg bg-[var(--background)] border border-[var(--border)] flex justify-between items-center text-xs">
+              <div>
+                <span class="text-[var(--muted-foreground)] block text-[11px]">Momento Actuante (Mu = wL²/8):</span>
+                <span id="val-mu" class="font-bold text-sm text-[var(--foreground)] font-mono">3.83 kN·m</span>
+              </div>
+              <div class="text-right">
+                <span class="text-[var(--muted-foreground)] block text-[11px]">Cortante (Vu = wL/2):</span>
+                <span id="val-vu" class="font-bold text-sm text-[var(--foreground)] font-mono">4.38 kN</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: FACTORES MODIFICADORES NSR-10 -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3 shadow-sm">
+            <details class="cursor-pointer group">
+              <summary class="text-sm font-semibold flex items-center justify-between list-none">
+                <span class="flex items-center gap-1.5">⚙️ 4. Factores Modificadores NSR-10</span>
+                <span class="text-xs text-emerald-600 font-mono group-open:rotate-180 transition-transform">▼ Desplegar</span>
+              </summary>
+              <div class="grid grid-cols-2 gap-2.5 pt-3 text-xs border-t border-[var(--border)] mt-2">
+                <div>
+                  <label class="text-[var(--muted-foreground)] block mb-1">Duración Carga (CD):</label>
+                  <select id="sel-cd" class="w-full bg-[var(--background)] border border-[var(--border)] rounded-lg px-2 py-1 text-xs outline-none">
+                    <option value="0.90">0.90 - Permanente (Muerta)</option>
+                    <option value="1.00" selected>1.00 - Ocupación (10 años)</option>
+                    <option value="1.15">1.15 - Viento / Nieve (2 meses)</option>
+                    <option value="1.60">1.60 - Sismo (10 min)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-[var(--muted-foreground)] block mb-1">Humedad (Cm):</label>
+                  <select id="sel-cm" class="w-full bg-[var(--background)] border border-[var(--border)] rounded-lg px-2 py-1 text-xs outline-none">
+                    <option value="12" selected>1.00 - Seco (CH = 12%)</option>
+                    <option value="14">0.91 - Seco (CH = 14%)</option>
+                    <option value="17">0.79 - Seco (CH = 17%)</option>
+                    <option value="19">0.70 - Seco (CH = 19%)</option>
+                    <option value="humedo">0.75 - Húmedo (CH > 19%)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-[var(--muted-foreground)] block mb-1">Incisiones (Cin):</label>
+                  <select id="sel-cin" class="w-full bg-[var(--background)] border border-[var(--border)] rounded-lg px-2 py-1 text-xs outline-none">
+                    <option value="sin" selected>1.00 - Sin Incisiones</option>
+                    <option value="con">0.80 - Tratado c/ Incisiones</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-[var(--muted-foreground)] block mb-1">Redundancia (Cr):</label>
+                  <select id="sel-cr" class="w-full bg-[var(--background)] border border-[var(--border)] rounded-lg px-2 py-1 text-xs outline-none">
+                    <option value="1.00" selected>1.00 - Aislado</option>
+                    <option value="1.15">1.15 - Repartición (s ≤ 61cm)</option>
+                  </select>
+                </div>
+              </div>
+            </details>
+          </div>
+
+        </div>
+
+        <!-- PANEL DERECHO: VISUALIZADOR GRÁFICO Y SEMÁFOROS DCR (7 cols) -->
+        <div class="lg:col-span-7 space-y-4">
+          
+          <!-- TARJETAS DCR -->
+          <div class="grid grid-cols-3 gap-3">
+            <!-- Flexión -->
+            <div id="card-dcr-flex" class="bg-[var(--card)] border-2 border-emerald-500 rounded-xl p-3 shadow-sm transition-all">
+              <div class="flex items-center justify-between text-xs mb-1">
+                <span class="font-semibold">Flexión (fb / F'b)</span>
+                <span id="badge-flex" class="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold px-1.5 py-0.5 rounded text-[10px]">CUMPLE</span>
+              </div>
+              <div class="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400" id="txt-dcr-flex">26.8%</div>
+              <div class="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden mt-1.5">
+                <div id="bar-flex" class="bg-emerald-500 h-full transition-all duration-300" style="width: 26.8%"></div>
+              </div>
+              <div class="flex justify-between text-[10px] text-[var(--muted-foreground)] mt-1 font-mono">
+                <span>fb: <span id="val-flex-act">22.7</span> MPa</span>
+                <span>F'b: <span id="val-flex-adm">85.2</span> MPa</span>
+              </div>
+            </div>
+
+            <!-- Cortante -->
+            <div id="card-dcr-cort" class="bg-[var(--card)] border-2 border-emerald-500 rounded-xl p-3 shadow-sm transition-all">
+              <div class="flex items-center justify-between text-xs mb-1">
+                <span class="font-semibold">Cortante (fv / F'v)</span>
+                <span id="badge-cort" class="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold px-1.5 py-0.5 rounded text-[10px]">CUMPLE</span>
+              </div>
+              <div class="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400" id="txt-dcr-cort">19.1%</div>
+              <div class="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden mt-1.5">
+                <div id="bar-cort" class="bg-emerald-500 h-full transition-all duration-300" style="width: 19.1%"></div>
+              </div>
+              <div class="flex justify-between text-[10px] text-[var(--muted-foreground)] mt-1 font-mono">
+                <span>fv: <span id="val-cort-act">1.58</span> MPa</span>
+                <span>F'v: <span id="val-cort-adm">8.30</span> MPa</span>
+              </div>
+            </div>
+
+            <!-- Flecha -->
+            <div id="card-dcr-flecha" class="bg-[var(--card)] border-2 border-emerald-500 rounded-xl p-3 shadow-sm transition-all">
+              <div class="flex items-center justify-between text-xs mb-1">
+                <span class="font-semibold">Flecha (Δ / L/240)</span>
+                <span id="badge-flecha" class="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold px-1.5 py-0.5 rounded text-[10px]">CUMPLE</span>
+              </div>
+              <div class="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400" id="txt-dcr-flecha">41.2%</div>
+              <div class="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full overflow-hidden mt-1.5">
+                <div id="bar-flecha" class="bg-emerald-500 h-full transition-all duration-300" style="width: 41.2%"></div>
+              </div>
+              <div class="flex justify-between text-[10px] text-[var(--muted-foreground)] mt-1 font-mono">
+                <span>Δ: <span id="val-flecha-act">6.0</span> mm</span>
+                <span>Adm: <span id="val-flecha-adm">14.6</span> mm</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- LIENZO SVG DINÁMICO -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <h3 class="text-sm font-semibold flex items-center gap-2">
+                <span>🔬 Vista Gráfica a Escala</span>
+              </h3>
+              <div class="flex gap-1 text-xs">
+                <button onclick="setGraphMode('seccion')" id="btn-mode-seccion" class="px-2.5 py-1 rounded bg-emerald-600 text-white font-medium text-xs">Sección 2D</button>
+                <button onclick="setGraphMode('esfuerzos')" id="btn-mode-esfuerzos" class="px-2.5 py-1 rounded bg-[var(--background)] border border-[var(--border)] text-[var(--muted-foreground)] text-xs">Diagrama σ y τ</button>
+                <button onclick="setGraphMode('solicitaciones')" id="btn-mode-sol" class="px-2.5 py-1 rounded bg-[var(--background)] border border-[var(--border)] text-[var(--muted-foreground)] text-xs">M(x) y V(x)</button>
+              </div>
+            </div>
+
+            <div class="bg-[var(--background)] rounded-xl border border-[var(--border)] p-2 flex items-center justify-center min-h-[300px]">
+              <svg id="svg-viewer" width="100%" height="280" viewBox="0 0 480 280" class="overflow-visible select-none">
+                <!-- Dibujado por svgViewer.js -->
+              </svg>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- PESTAÑA 2: COLUMNAS (CARGA AXIAL PURA P / T)   -->
+    <!-- ============================================== -->
+    <div id="tab-columnas" class="tab-content space-y-5">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <div class="lg:col-span-5 space-y-4">
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3 shadow-sm">
+            <h2 class="text-sm font-semibold">🏛️ Solicitación Axial y Altura de Pandeo</h2>
+            <div class="space-y-3 text-xs">
+              <div>
+                <label class="text-[var(--muted-foreground)] block mb-1">Carga Axial Actuante (Pu):</label>
+                <div class="flex items-center">
+                  <input id="col-inp-p" type="number" step="5" value="45" min="1" max="500" class="w-full bg-[var(--background)] border border-[var(--border)] rounded-l-lg px-2.5 py-1.5 text-xs font-mono outline-none">
+                  <span class="bg-[var(--border)] px-2 py-1.5 text-xs rounded-r-lg text-[var(--muted-foreground)]">kN (Compresión)</span>
+                </div>
+              </div>
+
+              <div>
+                <label class="text-[var(--muted-foreground)] block mb-1">Longitud de Columna (L):</label>
+                <div class="flex items-center">
+                  <input id="col-inp-l" type="number" step="0.1" value="2.8" min="0.5" max="8" class="w-full bg-[var(--background)] border border-[var(--border)] rounded-l-lg px-2.5 py-1.5 text-xs font-mono outline-none">
+                  <span class="bg-[var(--border)] px-2 py-1.5 text-xs rounded-r-lg text-[var(--muted-foreground)]">m</span>
+                </div>
+              </div>
+
+              <div>
+                <label class="text-[var(--muted-foreground)] block mb-1">Factor de Longitud Efectiva (K):</label>
+                <select id="col-sel-k" class="w-full bg-[var(--background)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs outline-none">
+                  <option value="1.00" selected>K = 1.00 : Articulado - Articulado (Recomendado)</option>
+                  <option value="0.80">K = 0.80 : Empotrado - Articulado</option>
+                  <option value="0.65">K = 0.65 : Empotrado - Empotrado</option>
+                  <option value="2.10">K = 2.10 : Voladizo / Libre (Cantilever)</option>
+                </select>
+              </div>
+
+              <div class="pt-2 border-t border-[var(--border)]">
+                <label class="text-[var(--muted-foreground)] block mb-1">Arreglo de Culmos:</label>
+                <div class="grid grid-cols-3 gap-2">
+                  <button type="button" onclick="setColArrangement('1')" id="btn-col-1" class="p-2 border-2 border-emerald-500 rounded-lg text-center font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
+                    1 Culmo (Ø140)
+                  </button>
+                  <button type="button" onclick="setColArrangement('2')" id="btn-col-2" class="p-2 border border-[var(--border)] rounded-lg text-center font-medium text-[var(--muted-foreground)]">
+                    2 Culmos
+                  </button>
+                  <button type="button" onclick="setColArrangement('4')" id="btn-col-4" class="p-2 border border-[var(--border)] rounded-lg text-center font-medium text-[var(--muted-foreground)]">
+                    4 Culmos (Caja)
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 space-y-4">
+          <!-- Tarjetas de Esbeltez y Capacidad -->
+          <div class="grid grid-cols-3 gap-3">
+            <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 shadow-sm">
+              <span class="text-xs text-[var(--muted-foreground)] block">Esbeltez (λ = Le/r)</span>
+              <span id="col-val-esbeltez" class="text-xl font-bold font-mono text-[var(--foreground)]">23.1</span>
+              <span class="text-[10px] text-emerald-600 block mt-1">✓ Límite ≤ 50 (NSR-10)</span>
+            </div>
+            <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 shadow-sm">
+              <span class="text-xs text-[var(--muted-foreground)] block">Factor Estabilidad (Cp)</span>
+              <span id="col-val-cp" class="text-xl font-bold font-mono text-[var(--foreground)]">0.742</span>
+              <span class="text-[10px] text-[var(--muted-foreground)] block mt-1">G.4.3.5 (c = 0.85)</span>
+            </div>
+            <div class="bg-[var(--card)] border-2 border-emerald-500 rounded-xl p-3 shadow-sm">
+              <span class="text-xs text-[var(--muted-foreground)] block">Ratio DCR (Pu / Padm)</span>
+              <span id="col-val-dcr" class="text-xl font-bold font-mono text-emerald-600">32.1%</span>
+              <span class="text-[10px] text-emerald-600 block mt-1 font-bold">CUMPLE SECCIÓN</span>
+            </div>
+          </div>
+
+          <!-- Gráfico Curva de Capacidad Padm(L) -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-2 shadow-sm">
+            <h3 class="text-sm font-semibold">📈 Curva de Capacidad Admisible Padm(L) con Punto de Diseño</h3>
+            <div class="bg-[var(--background)] rounded-xl border border-[var(--border)] p-2 flex items-center justify-center min-h-[240px]">
+              <svg id="svg-col-viewer" width="100%" height="240" viewBox="0 0 480 240" class="overflow-visible select-none"></svg>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- PESTAÑA 3: FLEXO-COMPRESIÓN BIAXIAL (G.5.2)    -->
+    <!-- ============================================== -->
+    <div id="tab-flexocomp" class="tab-content space-y-5">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="lg:col-span-5 space-y-4">
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3 shadow-sm">
+            <h2 class="text-sm font-semibold">🔄 Solicitaciones Combinadas (P + Mx + My)</h2>
+            <div class="space-y-3 text-xs">
+              <div>
+                <label class="text-[var(--muted-foreground)] block mb-1">Carga Axial de Compresión (P):</label>
+                <input id="fc-p" type="number" value="30" class="w-full bg-[var(--background)] border border-[var(--border)] rounded-lg p-2 font-mono outline-none">
+              </div>
+              <div>
+                <label class="text-[var(--muted-foreground)] block mb-1">Momento Flector en Eje X (Mx):</label>
+                <input id="fc-mx" type="number" step="0.5" value="2.5" class="w-full bg-[var(--background)] border border-[var(--border)] rounded-lg p-2 font-mono outline-none">
+              </div>
+              <div>
+                <label class="text-[var(--muted-foreground)] block mb-1">Momento Flector en Eje Y (My):</label>
+                <input id="fc-my" type="number" step="0.2" value="1.0" class="w-full bg-[var(--background)] border border-[var(--border)] rounded-lg p-2 font-mono outline-none">
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-2 text-xs shadow-sm">
+            <h3 class="font-semibold text-sm">Fórmula de Interacción NSR-10 G.5.2:</h3>
+            <p class="font-mono text-[11px] p-2 rounded bg-[var(--background)] border border-[var(--border)] overflow-x-auto">
+              [fc / F'c]² + [fb1 / (F'b1·(1 - fc/FcE1))] + [fb2 / (F'b2·(1 - fc/FcE2 - (fb1/FbE1)²))] ≤ 1.0
+            </p>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 space-y-4">
+          <!-- Ratio Total Biaxial -->
+          <div class="bg-[var(--card)] border-2 border-emerald-500 rounded-xl p-4 flex items-center justify-between shadow-sm">
+            <div>
+              <span class="text-xs text-[var(--muted-foreground)] block">Índice Total de Interacción (G.5.2):</span>
+              <span id="fc-total-ratio" class="text-3xl font-extrabold font-mono text-emerald-600">0.485</span>
+              <span class="text-xs text-[var(--muted-foreground)] block mt-0.5">Límite Normativo ≤ 1.00</span>
+            </div>
+            <div id="fc-badge-status" class="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold px-4 py-2 rounded-xl text-sm border border-emerald-500/20">
+              SECCIÓN CONFORME
+            </div>
+          </div>
+
+          <!-- Diagrama de Superficie P-M -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-2 shadow-sm">
+            <h3 class="text-sm font-semibold">🎯 Diagrama de Superficie de Interacción P - M</h3>
+            <div class="bg-[var(--background)] rounded-xl border border-[var(--border)] p-2 flex items-center justify-center min-h-[240px]">
+              <svg id="svg-pm-viewer" width="100%" height="240" viewBox="0 0 480 240" class="overflow-visible select-none"></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- PESTAÑA 4: CATÁLOGO Y MEMORIA DE CÁLCULO       -->
+    <!-- ============================================== -->
+    <div id="tab-catalogo" class="tab-content space-y-5">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 space-y-4 shadow-sm">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 class="text-base font-bold text-[var(--foreground)]">📋 Memoria de Verificación Estructural</h2>
+            <p class="text-xs text-[var(--muted-foreground)]">Formato técnico listo para Radicación en Curaduría Urbana o Interventoría</p>
+          </div>
+          <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm">
+            🖨️ Imprimir / Guardar en PDF
+          </button>
+        </div>
+
+        <div id="report-container" class="bg-white text-gray-900 p-6 rounded-xl border border-gray-300 font-sans shadow-sm">
+          <!-- Renderizado dinámico por reportGenerator.js -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TEMA OSCURO / CLARO TOGGLE SCRIPT -->
+  <script>
+    const themeBtn = document.getElementById('theme-toggle');
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => {
+        const html = document.documentElement;
+        if (html.classList.contains('dark')) {
+          html.classList.remove('dark');
+          html.classList.add('light');
+          themeBtn.textContent = '🌙';
+        } else {
+          html.classList.remove('light');
+          html.classList.add('dark');
+          themeBtn.textContent = '☀️';
+        }
+      });
+    }
+  </script>
+
+  <!-- MÓDULO JS PRINCIPAL -->
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>

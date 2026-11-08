@@ -1,0 +1,26 @@
+{
+  "name": "diseno-madera-web",
+  "version": "1.0.0",
+  "description": "Aplicación web para el diseño y verificación de secciones estructurales en madera y bambú (Dendrocalamus asper) bajo NSR-10 Título G",
+  "type": "module",
+  "scripts": {
+    "dev": "python -m http.server 3000",
+    "serve": "python -m http.server 3000",
+    "build": "echo 'Compilación estática lista para Cloudflare Pages'"
+  },
+  "keywords": [
+    "dendrocalamus",
+    "bambu",
+    "madera",
+    "nsr-10",
+    "ingenieria-civil",
+    "calculo-estructural",
+    "cloudflare-pages"
+  ],
+  "author": "Ingmordor",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ingmordor/diseno-madera-web.git"
+  }
+}

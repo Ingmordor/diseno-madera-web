@@ -291,7 +291,7 @@ function renderSeccionMultiElemento(elementos, incluirImagenes) {
                       ${axialPct}%
                     </td>
                     <td class="font-mono">${el.Mn.toFixed(2)}</td>
-                    <td class="font-mono">${el.Ma.toFixed(2)}</td>
+                    <td class="font-mono">${el.Ma1.toFixed(2)}</td>
                     <td class="font-bold font-mono ${el.dcrFlex <= 1.0 ? 'text-emerald-700' : 'text-red-600'}">
                       ${flexPct}%
                     </td>
@@ -443,12 +443,12 @@ function renderFichaDetallada(item, material, incluirImagenes) {
             </tr>
             <tr>
               <td class="text-left font-medium">Cortante Actuante ($V_a \\le V_n$)</td>
-              <td class="font-mono">${item.Va1.toFixed(2)} kN</td>
-              <td class="font-mono">${(item.Vn || 15.0).toFixed(2)} kN</td>
+              <td class="font-mono">${Math.hypot(item.Va1, item.Va2).toFixed(2)} kN</td>
+              <td class="font-mono">${item.Vn.toFixed(2)} kN</td>
               <td class="font-bold font-mono text-emerald-700">
-                ${((item.Va1 / (item.Vn || 15.0)) * 100).toFixed(1)}%
+                ${((Math.hypot(item.Va1, item.Va2) / item.Vn) * 100).toFixed(1)}%
               </td>
-              <td class="font-bold text-emerald-700">CUMPLE</td>
+              <td class="font-bold">${Math.hypot(item.Va1, item.Va2) <= item.Vn ? "CUMPLE" : "SOBREESFUERZO"}</td>
             </tr>
             <tr class="bg-gray-50 font-bold">
               <td class="text-left">Interacción Biaxial NSR-10 G.5.2</td>

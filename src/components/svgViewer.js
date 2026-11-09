@@ -9,9 +9,23 @@ export function renderCrossSectionSVG(containerId, section, mode = 'seccion', re
   const w = 480;
   const h = 280;
   const cx = w / 2;
-  const cy = h / 2;
+  const cy = h / 2 + 10;
+  const matInfo = results && results.material ? results.material : null;
 
   let content = '';
+
+  // Encabezado visual de propiedades del material en el visor
+  const headerMatSVG = matInfo ? `
+    <g class="select-none">
+      <rect x="8" y="8" width="464" height="28" rx="6" fill="var(--card)" stroke="var(--border)" stroke-width="1" />
+      <text x="16" y="26" fill="currentColor" font-size="11" font-weight="bold">
+        🌱 ${matInfo.codigo}: ${matInfo.nombre.split(' (')[0]}
+      </text>
+      <text x="460" y="26" text-anchor="end" fill="#059669" font-size="10" font-family="monospace" font-weight="bold">
+        Fb: ${matInfo.fb.toFixed(1)} MPa | Fc: ${matInfo.fc.toFixed(1)} MPa | E: ${matInfo.e05.toLocaleString()} MPa
+      </text>
+    </g>
+  ` : '';
 
   if (mode === 'seccion') {
     if (section.tipo === 'tubo') {
@@ -124,5 +138,5 @@ export function renderCrossSectionSVG(containerId, section, mode = 'seccion', re
     `;
   }
 
-  container.innerHTML = content;
+  container.innerHTML = headerMatSVG + content;
 }

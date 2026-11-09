@@ -198,6 +198,7 @@ export function verifyBeam(input) {
 
   return {
     geom,
+    material,
     solicitaciones: { Mu, Vu, w, Luz, Lu },
     admisibles: { F_b_adm, F_v_adm, E_min_mod, E_05_mod },
     actuantes: { fb_act, fv_act, delta_mm },

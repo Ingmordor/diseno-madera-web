@@ -115,6 +115,7 @@ export function verifyColumn(input) {
 
   return {
     geom: { ...geom, Aneta },
+    material,
     solicitaciones: { Pu, L, K, Le_mm },
     esbeltez: { lambda, r_min, cumple: stab.cumpleEsbeltez },
     estabilidad: { Cp, FcE: stab.FcE },
@@ -125,6 +126,6 @@ export function verifyColumn(input) {
       hankinson: dcr_hankinson,
       max: Math.max(dcr_axial, dcr_hankinson)
     },
-    cumple: dcr_axial <= 1.0 && stab.cumpleEsbeltez
+    cumple: dcr_axial <= 1.0 && dcr_hankinson <= 1.0 && stab.cumpleEsbeltez
   };
 }

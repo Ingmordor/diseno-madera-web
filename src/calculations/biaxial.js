@@ -62,8 +62,8 @@ export function verifyBiaxialInteraction(input) {
 
   // Esfuerzos actuantes
   const fc_act = (Pu * 1000) / geom.Area; // MPa
-  const fb1_act = (Mx * 1e6) / geom.Sx;  // MPa
-  const fb2_act = (My * 1e6) / geom.Sy;  // MPa
+  const fb1_act = (Math.abs(Mx) * 1e6) / geom.Sx;  // MPa
+  const fb2_act = (Math.abs(My) * 1e6) / geom.Sy;  // MPa
 
   // TÉRMINOS DE LA ECUACIÓN DE INTERACCIÓN NSR-10 G.5.2
   // Término 1: Efecto axial directo al cuadrado
@@ -96,6 +96,6 @@ export function verifyBiaxialInteraction(input) {
       aporteFlex2Pct: (terminoFlex2 / Math.max(0.001, ratioTotal)) * 100
     },
     ratioTotal,
-    cumple: ratioTotal <= 1.00
+    cumple: Number.isFinite(ratioTotal) && ratioTotal <= 1.00 && lambda_x <= 50 && lambda_y <= 50 && fc_act < FcE1 && fc_act < FcE2 && estLat.cumpleEsbeltez
   };
 }

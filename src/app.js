@@ -157,7 +157,7 @@ export function evaluarElemento(el) {
   const colRes = verifyColumn({
     material: mat,
     section: sec,
-    Pu: el.Pa || 10,
+    Pu: el.Pa ?? 0,
     L: el.L || 3.0,
     K: el.Ke || 1.0,
     factores: { CD: 0.90, Cm: 1.0, Ct: 1.0, Cin: 1.0, Cr: 1.0, Ckd: 1.0 }
@@ -167,20 +167,22 @@ export function evaluarElemento(el) {
   const biaxRes = verifyBiaxialInteraction({
     material: mat,
     section: sec,
-    Pu: el.Pa || 10,
-    Mx: el.Ma1 || 0.1,
-    My: el.Ma2 || 0.05,
+    Pu: el.Pa ?? 0,
+    Mx: el.Ma1 ?? 0,
+    My: el.Ma2 ?? 0,
     Lx: el.L || 3.0,
-    Ly: el.L || 3.0,
+    Ly: el.L ?? 3.0,
+    Kx: el.Ke ?? 1, Ky: el.Ke ?? 1,
     factores: { CD: 0.90 }
   });
 
-  const Mn = biaxRes.nominales.M_nx || 15.0;
-  const Pn = colRes.admisibles.Padm || 50.0;
+  const Mn = biaxRes.admisibles.Fb1_adm * biaxRes.geom.Sx / 1e6;
+  const Pn = colRes.admisibles.Padm;
   const dcrAxial = el.Pa / Pn;
-  const dcrFlex = (el.Ma1 || 0.1) / Mn;
+  const dcrFlex = (el.Ma1 ?? 0) / Mn;
   const rbi = biaxRes.ratioTotal;
-  const cumple = rbi <= 1.0 && colRes.esbeltez.cumple && dcrAxial <= 1.0;
+  const Vn = mat.fv * 0.90 * colRes.geom.Area / (sec.tipo === 'rect' ? 1.5 : sec.tipo === 'rolliza' ? 4/3 : 2) / 1000;
+  const cumple = biaxRes.cumple && colRes.cumple && Math.hypot(el.Va1 ?? 0, el.Va2 ?? 0) <= Vn;
 
   return {
     ...el,
@@ -191,10 +193,10 @@ export function evaluarElemento(el) {
     Fc_adm: colRes.admisibles.Fc_adm,
     Pn,
     Mn,
-    Vn: 25.0, // Capacidad cortante base
+    Vn: mat.fv * 0.90 * colRes.geom.Area / (sec.tipo === 'rect' ? 1.5 : sec.tipo === 'rolliza' ? 4/3 : 2) / 1000,
     fc: colRes.actuantes.fc_act,
-    fb1: biaxRes.esfuerzos.fb1,
-    fb2: biaxRes.esfuerzos.fb2,
+    fb1: biaxRes.actuantes.fb1_act,
+    fb2: biaxRes.actuantes.fb2_act,
     dcrAxial,
     dcrFlex,
     rbi,
@@ -358,11 +360,8 @@ export function runColumnRecalc() {
   if (state.colArrangement === '4') factorCulmos = 4;
 
   const section = {
-    tipo: state.sectionTipo,
-    D: state.D,
-    t: state.t,
-    b: state.b,
-    d: state.d
+    tipo: state.colArrangement === "2" ? "haz2" : state.sectionTipo,
+    D: state.D, t: state.t, b: state.b, d: state.d
   };
 
   const results = verifyColumn({
@@ -539,20 +538,79 @@ export function toggleReportImages(checkbox) {
   renderReport();
 }
 
+// GESTOR PRINCIPAL DE CAMBIO DE MATERIAL ESTRUCTURAL (REACTIVIDAD GLOBAL)
+export function onMaterialChange(matKey) {
+  if (!MATERIALES[matKey]) return;
+  state.materialKey = matKey;
+  const mat = MATERIALES[matKey];
+
+  // Sincronizar selectores en el DOM
+  ['sel-material', 'sel-material-col', 'sel-material-biax'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.value !== matKey) el.value = matKey;
+  });
+
+  // 1. Actualizar Badge de especie
+  const badge = document.getElementById('badge-especie');
+  if (badge) badge.textContent = `${mat.codigo}: ${mat.nombre.split(' (')[0]}`;
+
+  const badgeCol = document.getElementById('badge-especie-col');
+  if (badgeCol) badgeCol.textContent = `${mat.codigo}: ${mat.nombre.split(' (')[0]}`;
+
+  // 2. Actualizar Chips numéricos de esfuerzos y módulos
+  const elFb = document.getElementById('mat-fb');
+  if (elFb) elFb.textContent = `${mat.fb.toFixed(1)} MPa`;
+
+  const elFc = document.getElementById('mat-fc');
+  if (elFc) elFc.textContent = `${mat.fc.toFixed(1)} MPa`;
+
+  const elFv = document.getElementById('mat-fv');
+  if (elFv) elFv.textContent = `${mat.fv.toFixed(1)} MPa`;
+
+  const elE = document.getElementById('mat-e');
+  if (elE) elE.textContent = `${mat.e05.toLocaleString()} MPa`;
+
+  // Chips en pestaña columnas si existen
+  const elColFc = document.getElementById('col-mat-fc');
+  if (elColFc) elColFc.textContent = `${mat.fc.toFixed(1)} MPa`;
+  const elColEmin = document.getElementById('col-mat-emin');
+  if (elColEmin) elColEmin.textContent = `${mat.emin.toLocaleString()} MPa`;
+
+  // 3. Si el material es madera y la sección estaba en tubo, o si es bambú y estaba en rect, sincronizar opciones
+  if (mat.tipo === 'madera' || mat.tipo === 'laminada') {
+    if (state.sectionTipo === 'tubo') {
+      // Si el usuario elige madera, la sección por defecto puede ajustarse o permitirse
+    }
+  }
+
+  // 4. Recalcular todos los módulos reactivamente
+  runBeamRecalc();
+  runColumnRecalc();
+  runBiaxialRecalc();
+
+  // 5. Actualizar el visor gráfico transversal
+  updateMainGraph();
+
+  // 6. Si la pestaña activa es catálogo/memoria, refrescar el informe
+  if (state.activeTab === 'catalogo') {
+    renderReport();
+  }
+}
+
 // INICIALIZACIÓN DE LA APLICACIÓN
 export function initApp() {
   // Configurar listeners
   const selMat = document.getElementById('sel-material');
   if (selMat) {
     selMat.addEventListener('change', (e) => {
-      state.materialKey = e.target.value;
-      const mat = MATERIALES[state.materialKey];
-      document.getElementById('badge-especie').textContent = `${mat.codigo}: ${mat.nombre.split(' (')[0]}`;
-      document.getElementById('mat-fb').textContent = `${mat.fb.toFixed(1)} MPa`;
-      document.getElementById('mat-fc').textContent = `${mat.fc.toFixed(1)} MPa`;
-      document.getElementById('mat-fv').textContent = `${mat.fv.toFixed(1)} MPa`;
-      document.getElementById('mat-e').textContent = `${mat.e05.toLocaleString()} MPa`;
-      runBeamRecalc();
+      onMaterialChange(e.target.value);
+    });
+  }
+
+  const selMatCol = document.getElementById('sel-material-col');
+  if (selMatCol) {
+    selMatCol.addEventListener('change', (e) => {
+      onMaterialChange(e.target.value);
     });
   }
 
@@ -616,7 +674,7 @@ export function initApp() {
   const inpLuz = document.getElementById('inp-luz');
   if (inpLuz) {
     inpLuz.addEventListener('input', (e) => {
-      state.Luz = parseFloat(e.target.value) || 3.0;
+      state.Luz = (Number.isFinite(parseFloat(e.target.value)) ? parseFloat(e.target.value) : 3.0);
       runBeamRecalc();
     });
   }
@@ -624,7 +682,7 @@ export function initApp() {
   const inpW = document.getElementById('inp-w');
   if (inpW) {
     inpW.addEventListener('input', (e) => {
-      state.w = parseFloat(e.target.value) || 2.0;
+      state.w = (Number.isFinite(parseFloat(e.target.value)) ? parseFloat(e.target.value) : 2.0);
       runBeamRecalc();
     });
   }
@@ -644,23 +702,23 @@ export function initApp() {
 
   // Column inputs
   const colP = document.getElementById('col-inp-p');
-  if (colP) colP.addEventListener('input', (e) => { state.Pu = parseFloat(e.target.value) || 40; runColumnRecalc(); });
+  if (colP) colP.addEventListener('input', (e) => { state.Pu = (Number.isFinite(parseFloat(e.target.value)) ? parseFloat(e.target.value) : 40); runColumnRecalc(); });
 
   const colL = document.getElementById('col-inp-l');
-  if (colL) colL.addEventListener('input', (e) => { state.L_col = parseFloat(e.target.value) || 2.8; runColumnRecalc(); });
+  if (colL) colL.addEventListener('input', (e) => { state.L_col = (Number.isFinite(parseFloat(e.target.value)) ? parseFloat(e.target.value) : 2.8); runColumnRecalc(); });
 
   const colK = document.getElementById('col-sel-k');
-  if (colK) colK.addEventListener('change', (e) => { state.K_col = parseFloat(e.target.value) || 1.0; runColumnRecalc(); });
+  if (colK) colK.addEventListener('change', (e) => { state.K_col = (Number.isFinite(parseFloat(e.target.value)) ? parseFloat(e.target.value) : 1.0); runColumnRecalc(); });
 
   // Biaxial inputs
   const fcP = document.getElementById('fc-p');
-  if (fcP) fcP.addEventListener('input', (e) => { state.fc_P = parseFloat(e.target.value) || 30; runBiaxialRecalc(); });
+  if (fcP) fcP.addEventListener('input', (e) => { state.fc_P = (Number.isFinite(parseFloat(e.target.value)) ? parseFloat(e.target.value) : 30); runBiaxialRecalc(); });
 
   const fcMx = document.getElementById('fc-mx');
-  if (fcMx) fcMx.addEventListener('input', (e) => { state.fc_Mx = parseFloat(e.target.value) || 2.5; runBiaxialRecalc(); });
+  if (fcMx) fcMx.addEventListener('input', (e) => { state.fc_Mx = (Number.isFinite(parseFloat(e.target.value)) ? parseFloat(e.target.value) : 2.5); runBiaxialRecalc(); });
 
   const fcMy = document.getElementById('fc-my');
-  if (fcMy) fcMy.addEventListener('input', (e) => { state.fc_My = parseFloat(e.target.value) || 1.0; runBiaxialRecalc(); });
+  if (fcMy) fcMy.addEventListener('input', (e) => { state.fc_My = (Number.isFinite(parseFloat(e.target.value)) ? parseFloat(e.target.value) : 1.0); runBiaxialRecalc(); });
 
   // Disposición de columna
   window.setColArrangement = (n) => {
@@ -681,6 +739,7 @@ export function initApp() {
   // Exportar funciones globales
   window.switchTab = switchTab;
   window.setGraphMode = setGraphMode;
+  window.onMaterialChange = onMaterialChange;
   window.agregarElementoActual = agregarElementoActual;
   window.restaurarElementosTRL3 = restaurarElementosTRL3;
   window.setReportMode = setReportMode;

@@ -86,6 +86,7 @@
       </div>
     </header>
 
+    <aside role="status" class="rounded-xl border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm">Versión en validación: los cálculos y las propiedades de los materiales requieren revisión técnica antes de emitir memorias definitivas.</aside>
     <!-- NAVEGACIÓN MODULAR DE PESTAÑAS -->
     <nav class="flex border-b border-[var(--border)] gap-1 md:gap-2 overflow-x-auto pb-1 text-sm font-medium">
       <button onclick="switchTab('vigas')" id="tab-btn-vigas" class="tab-btn active px-4 py-2.5 rounded-t-xl border-b-2 border-emerald-600 text-emerald-600 dark:text-emerald-400 font-semibold bg-[var(--card)] flex items-center gap-2 transition-all">
@@ -430,7 +431,7 @@
                   <button type="button" onclick="setColArrangement('2')" id="btn-col-2" class="p-2 border border-[var(--border)] rounded-lg text-center font-medium text-[var(--muted-foreground)]">
                     2 Culmos
                   </button>
-                  <button type="button" onclick="setColArrangement('4')" id="btn-col-4" class="p-2 border border-[var(--border)] rounded-lg text-center font-medium text-[var(--muted-foreground)]">
+                  <button type="button" disabled title="Configuración pendiente de validación" id="btn-col-4" style="opacity:0.5" class="p-2 border border-[var(--border)] rounded-lg text-center font-medium text-[var(--muted-foreground)]">
                     4 Culmos (Caja)
                   </button>
                 </div>
